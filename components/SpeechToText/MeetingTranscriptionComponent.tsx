@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert,
+  Linking
 } from 'react-native';
 import useMeetingTranscription from '../../hooks/useMeetingTranscription';
 
@@ -26,7 +28,8 @@ export default function MeetingTranscriptionComponent() {
     error,
     startCapture,
     stopCapture,
-    clearTranscripts
+    clearTranscripts,
+    isNativeModuleAvailable
   } = useMeetingTranscription();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +48,14 @@ export default function MeetingTranscriptionComponent() {
     } catch (err) {
       setStatusMessage('Failed to start meeting transcription.');
       console.error('Failed to start capture:', err);
+      
+      if (err instanceof Error && err.message.includes('native module not available')) {
+        Alert.alert(
+          'Feature Not Available',
+          'This feature requires additional development environment setup. Currently, you can use the web version with TabAudioCapture for meeting transcription.',
+          [{ text: 'OK' }]
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -77,6 +88,44 @@ export default function MeetingTranscriptionComponent() {
             Meeting transcription requires native device features and is only available 
             on iOS and Android devices. Please use the mobile app to access this feature.
           </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // If we're on mobile but the native module isn't available
+  if (!isNativeModuleAvailable && (Platform.OS === 'android' || Platform.OS === 'ios')) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Meeting Transcription</Text>
+        
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            This feature requires a development build with native module integration.
+          </Text>
+        </View>
+        
+        <View style={[styles.errorContainer, {marginVertical: 20}]}>
+          <Text style={styles.errorText}>
+            The native module for meeting transcription is not available on this device.
+          </Text>
+          <Text style={[styles.errorText, {marginTop: 10}]}>
+            You can use the web version's Tab Audio Capture for meeting transcription as an alternative.
+          </Text>
+        </View>
+        
+        <View style={styles.alternativesContainer}>
+          <Text style={styles.alternativesTitle}>Available alternatives:</Text>
+          
+          <TouchableOpacity 
+            style={[styles.button, {backgroundColor: '#4285F4', marginVertical: 15}]}
+            onPress={() => Alert.alert(
+              'Alternative Options',
+              'Use the microphone transcription option for basic speech recognition, or use the web version with tab audio capture for meeting transcription.'
+            )}
+          >
+            <Text style={styles.buttonText}>Show Alternatives</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -358,5 +407,14 @@ const styles = StyleSheet.create({
     color: '#33691e',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  alternativesContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  alternativesTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   }
 });
