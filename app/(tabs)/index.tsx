@@ -1,17 +1,16 @@
-import { Image, StyleSheet, Platform, SafeAreaView, StatusBar, useColorScheme, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, SafeAreaView, StatusBar, useColorScheme, Platform, View, Text, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 import SpeechToTextComponent from '@/components/SpeechToText/SpeechToTextComponent';
 import WebSpeechComponent from '@/components/SpeechToText/WebSpeechComponent';
 import FileTranscriptionComponent from '@/components/SpeechToText/FileTranscriptionComponent';
+import TabAudioCapture from '@/components/SpeechToText/TabAudioCapture';
+import MeetingTranscriptionComponent from '@/components/SpeechToText/MeetingTranscriptionComponent';
+
+type AppMode = 'microphone' | 'meeting-file' | 'meeting-realtime' | 'meeting-native';
 
 export default function HomeScreen() {
   const isDarkMode = useColorScheme() === 'dark';
-  const [mode, setMode] = useState<'microphone' | 'meeting'>('microphone');
+  const [mode, setMode] = useState<AppMode>('microphone');
   
   return (
     <SafeAreaView style={{
@@ -29,22 +28,46 @@ export default function HomeScreen() {
           style={[styles.modeButton, mode === 'microphone' && styles.selectedMode]}
           onPress={() => setMode('microphone')}
         >
-          <Text style={[styles.modeButtonText, mode === 'microphone' && styles.selectedModeText]}>Microphone Input</Text>
+          <Text style={[styles.modeButtonText, mode === 'microphone' && styles.selectedModeText]}>Microphone</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity 
-          style={[styles.modeButton, mode === 'meeting' && styles.selectedMode]}
-          onPress={() => setMode('meeting')}
-        >
-          <Text style={[styles.modeButtonText, mode === 'meeting' && styles.selectedModeText]}>Meeting Files</Text>
-        </TouchableOpacity>
+        {Platform.OS !== 'web' && (
+          <TouchableOpacity 
+            style={[styles.modeButton, mode === 'meeting-native' && styles.selectedMode]}
+            onPress={() => setMode('meeting-native')}
+          >
+            <Text style={[styles.modeButtonText, mode === 'meeting-native' && styles.selectedModeText]}>Meeting</Text>
+          </TouchableOpacity>
+        )}
+        
+        {Platform.OS === 'web' && (
+          <>
+            <TouchableOpacity 
+              style={[styles.modeButton, mode === 'meeting-realtime' && styles.selectedMode]}
+              onPress={() => setMode('meeting-realtime')}
+            >
+              <Text style={[styles.modeButtonText, mode === 'meeting-realtime' && styles.selectedModeText]}>Live Meeting</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.modeButton, mode === 'meeting-file' && styles.selectedMode]}
+              onPress={() => setMode('meeting-file')}
+            >
+              <Text style={[styles.modeButtonText, mode === 'meeting-file' && styles.selectedModeText]}>Meeting File</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
       
       {/* Render appropriate component based on mode and platform */}
       {mode === 'microphone' ? (
         Platform.OS === 'web' ? <WebSpeechComponent /> : <SpeechToTextComponent />
-      ) : (
+      ) : mode === 'meeting-file' ? (
         <FileTranscriptionComponent />
+      ) : mode === 'meeting-realtime' ? (
+        <TabAudioCapture />
+      ) : (
+        <MeetingTranscriptionComponent />
       )}
     </SafeAreaView>
   );
@@ -56,11 +79,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 10,
     backgroundColor: '#e0e0e0',
+    flexWrap: 'wrap',
   },
   modeButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginHorizontal: 5,
+    marginVertical: 5,
     borderRadius: 20,
     backgroundColor: '#f0f0f0',
     borderWidth: 1,
